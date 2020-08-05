@@ -7,7 +7,7 @@ from collections import namedtuple
 from datetime import datetime, date, timedelta 
 
 
-Worklog = namedtuple('Worklog', ['description', 'time', 'issue', 'day'])
+Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
 conn = None
 cursor = None
 try:
@@ -25,7 +25,7 @@ try:
                           );""")
 
         cfg.close()
-except Error as err:
+except Exception as err:
     if not cfg:
         print('Error: missing config.json file')
     else:
@@ -45,10 +45,10 @@ def main():
 @click.option('--day', '-d')
 def work(description, time, issue, day=None):
     try:
-        worklog = Worklog._make((description, time, issue, datetime.strptime(day, '%d-%m-%y') if day else date.today().isoformat()))
-        cursor.execute('INSERT INTO worklogs (description, time, issue, day) VALUES {};'.format(tuple(worklog)))
+        worklog = Worklog._make((None, description, time, issue, datetime.strptime(day, '%d-%m-%y') if day else date.today().isoformat()))
+        cursor.execute('INSERT INTO worklogs (description, time, issue, day) VALUES {};'.format(tuple(worklog[1:])))
         conn.commit()
-    except Error as e:
+    except Exception as e:
         print(e)
 
 
@@ -71,8 +71,11 @@ def ls(month, today):
     q += ';'
     print(q)
     cursor.execute(q)
+    worklogs = []
     rows = cursor.fetchall()
-    print(rows)
+    if len(rows):
+        worklogs = [Worklog._make(row) for row in rows]
+    print('\n'.join([str(w) for w in worklogs]))
 
 if __name__ == '__main__':
     main()
