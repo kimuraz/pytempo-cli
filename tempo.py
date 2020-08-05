@@ -4,7 +4,7 @@ import sqlite3
 import json
 
 from collections import namedtuple
-from datetime import datetime, date, timedelta 
+from datetime import datetime, date, timedelta
 
 
 Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
@@ -45,8 +45,10 @@ def main():
 @click.option('--day', '-d')
 def work(description, time, issue, day=None):
     try:
-        worklog = Worklog._make((None, description, time, issue, datetime.strptime(day, '%d-%m-%y') if day else date.today().isoformat()))
-        cursor.execute('INSERT INTO worklogs (description, time, issue, day) VALUES {};'.format(tuple(worklog[1:])))
+        worklog = Worklog._make((None, description, time, issue, datetime.strptime(
+            day, '%d-%m-%y') if day else date.today().isoformat()))
+        cursor.execute('INSERT INTO worklogs (description, time, issue, day) VALUES {};'.format(
+            tuple(worklog[1:])))
         conn.commit()
     except Exception as e:
         print(e)
@@ -60,6 +62,7 @@ def send_month(month):
     else:
         print('Invalid month (1 to 12)')
 
+
 @main.command()
 @click.option('--month', '-m')
 @click.option('--today', '-t')
@@ -67,15 +70,30 @@ def ls(month, today):
     q = 'SELECT * FROM worklogs'
     if month:
         d = date(date.today().year, int(month), 1)
-        q = '{} WHERE day BETWEEN {} AND {}'.format(q, d, date(d.year, d.month+1, d.day) - timedelta(1))
+        q = '{} WHERE day BETWEEN {} AND {}'.format(
+            q, d, date(d.year, d.month+1, d.day) - timedelta(1))
     q += ';'
     print(q)
     cursor.execute(q)
     worklogs = []
+    total_hours = 0
     rows = cursor.fetchall()
     if len(rows):
         worklogs = [Worklog._make(row) for row in rows]
+        total_hours = sum([w.time for w in worklogs])
     print('\n'.join([str(w) for w in worklogs]))
+    print('TOTAL HOURS: {}'.format(total_hours))
+
+
+@main.command()
+@click.argument('id')
+def rm(id):
+    try:
+        cursor.execute('DELETE FROM worklogs WHERE id={}'.format(id))
+        conn.commit()
+    except Exception as e:
+        print(e)
+
 
 if __name__ == '__main__':
     main()
