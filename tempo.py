@@ -43,10 +43,11 @@ def main():
 @click.argument('time')
 @click.argument('issue')
 @click.option('--day', '-d')
-def work(description, time, issue, day=None):
+def work(description, time, issue, day):
     try:
-        worklog = Worklog._make((None, description, time, issue, datetime.strptime(
-            day, '%d-%m-%y') if day else date.today().isoformat()))
+        d = datetime.strptime(day, '%d-%m-%Y').date() if day else date.today()
+        worklog = Worklog._make(
+            (None, description, time, issue, d.isoformat()))
         cursor.execute('INSERT INTO worklogs (description, time, issue, day) VALUES {};'.format(
             tuple(worklog[1:])))
         conn.commit()
@@ -68,21 +69,24 @@ def send_month(month):
 @click.option('--today', '-t', is_flag=True)
 def ls(month, today):
     q = 'SELECT * FROM worklogs'
+    worklogs = []
+    total_hours = 0
+
     if month:
         d = date(date.today().year, int(month), 1)
         q = "{} WHERE day BETWEEN '{}' AND '{}'".format(
             q, d, date(d.year, d.month+1, d.day) - timedelta(1))
     elif today:
         q = "{} WHERE day='{}'".format(q, date.today().isoformat())
-    q += ';'
-    print(q)
+
+    q += ' ORDER BY day ASC;'
     cursor.execute(q)
-    worklogs = []
-    total_hours = 0
     rows = cursor.fetchall()
+
     if len(rows):
         worklogs = [Worklog._make(row) for row in rows]
         total_hours = sum([w.time for w in worklogs])
+
     print('\n'.join([str(w) for w in worklogs]))
     print('TOTAL HOURS: {}'.format(total_hours))
 
