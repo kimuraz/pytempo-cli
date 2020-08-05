@@ -65,13 +65,15 @@ def send_month(month):
 
 @main.command()
 @click.option('--month', '-m')
-@click.option('--today', '-t')
+@click.option('--today', '-t', is_flag=True)
 def ls(month, today):
     q = 'SELECT * FROM worklogs'
     if month:
         d = date(date.today().year, int(month), 1)
-        q = '{} WHERE day BETWEEN {} AND {}'.format(
+        q = "{} WHERE day BETWEEN '{}' AND '{}'".format(
             q, d, date(d.year, d.month+1, d.day) - timedelta(1))
+    elif today:
+        q = "{} WHERE day='{}'".format(q, date.today().isoformat())
     q += ';'
     print(q)
     cursor.execute(q)
