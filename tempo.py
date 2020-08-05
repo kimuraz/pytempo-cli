@@ -10,6 +10,7 @@ from datetime import datetime, date, timedelta
 Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
 conn = None
 cursor = None
+config = None
 try:
     with open('config.json') as cfg:
         config = json.load(cfg)
@@ -44,6 +45,9 @@ def main():
 @click.argument('issue')
 @click.option('--day', '-d')
 def work(description, time, issue, day):
+    """
+    Add a new worklog to the database
+    """
     try:
         d = datetime.strptime(day, '%d-%m-%Y').date() if day else date.today()
         worklog = Worklog._make(
@@ -56,18 +60,12 @@ def work(description, time, issue, day):
 
 
 @main.command()
-@click.argument('month')
-def send_month(month):
-    if 0 < month <= 12:
-        pass
-    else:
-        print('Invalid month (1 to 12)')
-
-
-@main.command()
 @click.option('--month', '-m')
 @click.option('--today', '-t', is_flag=True)
-def ls(month, today):
+def ls(month, today, stdout=True):
+    """
+    Lists database worklogs
+    """
     q = 'SELECT * FROM worklogs'
     worklogs = []
     total_hours = 0
@@ -87,18 +85,36 @@ def ls(month, today):
         worklogs = [Worklog._make(row) for row in rows]
         total_hours = sum([w.time for w in worklogs])
 
-    print('\n'.join([str(w) for w in worklogs]))
-    print('TOTAL HOURS: {}'.format(total_hours))
+    if stdout:
+        print('\n'.join([str(w) for w in worklogs]))
+        print('TOTAL HOURS: {}'.format(total_hours))
+    
+    return worklogs
 
 
 @main.command()
 @click.argument('id')
 def rm(id):
+    """
+    Removes a worklog from the database
+    """
     try:
         cursor.execute('DELETE FROM worklogs WHERE id={}'.format(id))
         conn.commit()
     except Exception as e:
         print(e)
+
+
+@main.command()
+@click.option('--today', '-t', is_flag=True)
+@click.option('--month', '-m')
+@click.option('--remove', '-rm', is_flag=True)
+@click.pass_context
+def send(ctx, today, month, remove):
+    """
+    Send worklogs to tempo through REST requests.
+    """
+    worklogs = ctx.invoke(ls, month=month, today=today, stdout=False) 
 
 
 if __name__ == '__main__':
