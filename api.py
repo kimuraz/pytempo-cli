@@ -3,7 +3,7 @@ import requests
 BASE_URL = 'https://api.tempo.io/core/3/{}'
 
 
-def send_worklog(worklog, token):
+def send_worklog(worklog, token, account_id):
     headers = {
         'Authorization': 'Bearer {}'.format(token),
         'Content-Type': 'application/json',
@@ -12,9 +12,10 @@ def send_worklog(worklog, token):
     print('Sending {}'.format(worklog))
     worklog_dict = {
         'description': worklog.description,
-        'timeSpentSeconds': worklog.time * 60,
+        'timeSpentSeconds': worklog.time * 3600,
         'issueKey': worklog.issue,
         'startDate': worklog.day,
+        'authorAccountId': account_id,
     }
     res = requests.post(BASE_URL.format('worklogs'),
                         json=worklog_dict, headers=headers)

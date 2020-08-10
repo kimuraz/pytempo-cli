@@ -140,6 +140,6 @@ def send(ctx, today, month, remove):
     """
     worklogs = ctx.invoke(ls, month=month, today=today, stdout=False)
     for w in worklogs:
-        if send_worklog(w, config['token']) and remove:
+        if send_worklog(w, config['token'], config['account_id']) and remove:
             ctx.invoke(rm, id=w.id)
         time.sleep(0.2)
