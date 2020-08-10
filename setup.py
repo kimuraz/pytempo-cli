@@ -6,6 +6,7 @@ setup(
     py_modules=['tempo'],
     install_requires=[
         'click',
+        'requests',
     ],
     extras_require={
         'dev': [

@@ -1,9 +1,12 @@
 import click
 import json
 import sqlite3
+import time
 
 from collections import namedtuple
 from datetime import datetime, date, timedelta
+
+from api import send_worklog
 
 
 Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
@@ -87,7 +90,7 @@ def ls(month, today, stdout=True):
     if stdout:
         print('\n'.join([str(w) for w in worklogs]))
         print('TOTAL HOURS: {}'.format(total_hours))
-    
+
     return worklogs
 
 
@@ -103,6 +106,7 @@ def rm(id):
     except Exception as e:
         print(e)
 
+
 @main.command()
 @click.argument('id')
 @click.option('--date', '-d')
@@ -115,9 +119,11 @@ def edit(id, date, description, time, issue):
         args = ''
         for k in args_dict.keys():
             if args_dict[k] and k != 'id':
-                args += "{}{}='{}'".format(',' if args else '', k, args_dict[k])
+                args += "{}{}='{}'".format(',' if args else '',
+                                           k, args_dict[k])
         if args:
-            cursor.execute('UPDATE worklogs SET {} WHERE id={}'.format(''.join(args),id))
+            cursor.execute(
+                'UPDATE worklogs SET {} WHERE id={}'.format(''.join(args), id))
             conn.commit()
     except Exception as e:
         print(e)
@@ -132,4 +138,8 @@ def send(ctx, today, month, remove):
     """
     Send worklogs to tempo through REST requests.
     """
-    worklogs = ctx.invoke(ls, month=month, today=today, stdout=False) 
+    worklogs = ctx.invoke(ls, month=month, today=today, stdout=False)
+    for w in worklogs:
+        if send_worklog(w, config['token']) and remove:
+            ctx.invoke(rm, id=w.id)
+        time.sleep(0.2)
