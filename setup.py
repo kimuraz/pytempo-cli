@@ -9,7 +9,7 @@ setup(
     ],
     extras_require={
         'dev': [
-            'autopep8'
+            'autopep8',
             'ipython'
         ]
     },
