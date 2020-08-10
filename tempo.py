@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import click
 import json
 import sqlite3
@@ -134,7 +133,3 @@ def send(ctx, today, month, remove):
     Send worklogs to tempo through REST requests.
     """
     worklogs = ctx.invoke(ls, month=month, today=today, stdout=False) 
-
-
-if __name__ == '__main__':
-    main()
