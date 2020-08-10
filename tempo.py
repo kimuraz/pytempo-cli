@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import click
-import sqlite3
 import json
+import sqlite3
 
 from collections import namedtuple
 from datetime import datetime, date, timedelta
@@ -101,6 +101,25 @@ def rm(id):
     try:
         cursor.execute('DELETE FROM worklogs WHERE id={}'.format(id))
         conn.commit()
+    except Exception as e:
+        print(e)
+
+@main.command()
+@click.argument('id')
+@click.option('--date', '-d')
+@click.option('--description')
+@click.option('--time', '-t')
+@click.option('--issue', '-i')
+def edit(id, date, description, time, issue):
+    try:
+        args_dict = locals()
+        args = ''
+        for k in args_dict.keys():
+            if args_dict[k] and k != 'id':
+                args += "{}{}='{}'".format(',' if args else '', k, args_dict[k])
+        if args:
+            cursor.execute('UPDATE worklogs SET {} WHERE id={}'.format(''.join(args),id))
+            conn.commit()
     except Exception as e:
         print(e)
 
