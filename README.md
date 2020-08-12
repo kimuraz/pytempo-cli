@@ -30,6 +30,16 @@ $ autopep8 -i filename.py
 
 The JSON config file should hold a token, the user id on atlassian and the full path where you want the database to be saved, the project uses SQLite.
 
+You can run to create the json file:
+
+```
+$ tempo configure -i
+# or
+$ tempo configure -t your_token -a account_id -d /path/to/db.sqlite3
+```
+
+It will save the config file to `$HOME/.tempo/config.json`, by default it's the path to the database as well.
+
 ```
 {
   "token": "myaw3s0m3t0k3n!",

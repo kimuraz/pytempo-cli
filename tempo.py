@@ -1,44 +1,46 @@
 import click
-import json
-import sqlite3
 import time
+import pathlib
 
 from collections import namedtuple
 from datetime import datetime, date, timedelta
 
 from api import send_worklog
+from db import connect_db 
+from config import set_config, set_db
 
 
 Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
-conn = None
-cursor = None
-config = None
-try:
-    with open('config.json') as cfg:
-        config = json.load(cfg)
-        conn = sqlite3.connect(config['db_path'])
-        cursor = conn.cursor()
-
-        cursor.execute("""CREATE TABLE IF NOT EXISTS worklogs (
-                            id integer PRIMARY KEY,
-                            description text NOT NULL,
-                            time float NOT NULL,
-                            issue text NOT NULL,
-                            day date NOT NULL
-                          );""")
-
-        cfg.close()
-except Exception as err:
-    if not cfg:
-        print('Error: missing config.json file')
-    else:
-        print(err)
-    exit(1)
-
 
 @click.group()
 def main():
     pass
+
+
+@main.command()
+@click.option('--interactive', '-i', is_flag=True)
+@click.option('--token', '-t')
+@click.option('--account', '-a')
+@click.option('--db', '-d')
+def configure(interactive, token=None, account=None, db=None):
+    cfg = None
+    if interactive:
+        cfg = {
+            'token': click.prompt('Token'),
+            'account_id': click.prompt('Account ID'),
+            'db_path': click.prompt('Path to the DB', default='{}/.tempo/db.sqlite3'.format(pathlib.Path.home()))
+        }
+    else:
+        if not token or not account or not db:
+            print('Please, provide all the parameters (token, account id and db path) or enter the interactive mode -i')
+            exit(1)
+        cfg = {
+            'token': token,
+            'account_id': account,
+            'db_path': db
+        }
+    set_config(cfg)
+    set_db()
 
 
 @main.command()
@@ -51,6 +53,7 @@ def work(description, time, issue, day):
     Add a new worklog to the database
     """
     try:
+        (conn, cursor) = connect_db()
         d = datetime.strptime(day, '%d-%m-%Y').date() if day else date.today()
         worklog = Worklog._make(
             (None, description, time, issue, d.isoformat()))
@@ -80,6 +83,7 @@ def ls(month, today, stdout=True):
         q = "{} WHERE day='{}'".format(q, date.today().isoformat())
 
     q += ' ORDER BY day ASC;'
+    (conn, cursor) = connect_db()
     cursor.execute(q)
     rows = cursor.fetchall()
 
@@ -101,6 +105,7 @@ def rm(id):
     Removes a worklog from the database
     """
     try:
+        (conn, cursor) = connect_db()
         cursor.execute('DELETE FROM worklogs WHERE id={}'.format(id))
         conn.commit()
     except Exception as e:
@@ -122,6 +127,7 @@ def edit(id, date, description, time, issue):
                 args += "{}{}='{}'".format(',' if args else '',
                                            k, args_dict[k])
         if args:
+            (conn, cursor) = connect_db()
             cursor.execute(
                 'UPDATE worklogs SET {} WHERE id={}'.format(''.join(args), id))
             conn.commit()
