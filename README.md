@@ -7,8 +7,8 @@ This is a cli project to help managing tasks that needs to be logged on Atlassia
 Still needs:
 
 - [ ] Interactive activity register #1
-- [ ] Proper configuration of setup.py
-- [ ] CLI configuration command, to setup config.json
+- [X] Proper configuration of setup.py
+- [X] CLI configuration command, to setup config.json
 - [ ] Docs
 - [ ] Project organisation
 
