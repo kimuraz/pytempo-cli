@@ -6,11 +6,12 @@ from collections import namedtuple
 from datetime import datetime, date, timedelta
 
 from api import send_worklog
-from db import connect_db 
+from db import connect_db
 from config import set_config, set_db, get_config
 
 
 Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
+
 
 @click.group()
 def main():
