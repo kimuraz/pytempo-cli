@@ -18,3 +18,8 @@ def set_db():
                         issue text NOT NULL,
                         day date NOT NULL
                       );""")
+
+def get_config():
+    with open('{}/.tempo/config.json'.format(pathlib.Path.home()), 'r') as f:
+        return json.load(f)
+    

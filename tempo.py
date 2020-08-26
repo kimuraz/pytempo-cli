@@ -7,7 +7,7 @@ from datetime import datetime, date, timedelta
 
 from api import send_worklog
 from db import connect_db 
-from config import set_config, set_db
+from config import set_config, set_db, get_config
 
 
 Worklog = namedtuple('Worklog', ['id', 'description', 'time', 'issue', 'day'])
@@ -145,6 +145,7 @@ def send(ctx, today, month, remove):
     Send worklogs to tempo through REST requests.
     """
     worklogs = ctx.invoke(ls, month=month, today=today, stdout=False)
+    config = get_config()
     for w in worklogs:
         if send_worklog(w, config['token'], config['account_id']) and remove:
             ctx.invoke(rm, id=w.id)
