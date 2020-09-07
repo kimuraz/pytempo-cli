@@ -67,8 +67,9 @@ def work(description, time, issue, day):
 
 @main.command()
 @click.option('--month', '-m')
+@click.option('--day', '-d')
 @click.option('--today', '-t', is_flag=True)
-def ls(month, today, stdout=True):
+def ls(month, day, today, stdout=True):
     """
     Lists database worklogs
     """
@@ -80,6 +81,9 @@ def ls(month, today, stdout=True):
         d = date(date.today().year, int(month), 1)
         q = "{} WHERE day BETWEEN '{}' AND '{}'".format(
             q, d, date(d.year, d.month+1, d.day) - timedelta(1))
+    elif day:
+        d = datetime.strptime(day, '%d-%m-%Y').date()
+        q = "{} WHERE day = '{}'".format(q, d)
     elif today:
         q = "{} WHERE day='{}'".format(q, date.today().isoformat())
 
@@ -100,25 +104,35 @@ def ls(month, today, stdout=True):
 
 
 @main.command()
-@click.argument('id')
-def rm(id):
+@click.option('--month', '-m')
+@click.option('--id', '-i')
+def rm(month, id):
     """
     Removes a worklog from the database
     """
     try:
         (conn, cursor) = connect_db()
-        cursor.execute('DELETE FROM worklogs WHERE id={}'.format(id))
+        rm_query = 'DELETE FROM worklogs WHERE {}'
+
+        if id:
+            cursor.execute(rm_query.format('id={}'.format(id)))
+
+        if month:
+            d = date(date.today().year, int(month), 1)
+            cursor.execute(rm_query.format(" day BETWEEN '{}' AND '{}'".format(
+                d, date(d.year, d.month+1, d.day) - timedelta(1))))
+
         conn.commit()
     except Exception as e:
         print(e)
 
 
-@main.command()
-@click.argument('id')
-@click.option('--date', '-d')
-@click.option('--description')
-@click.option('--time', '-t')
-@click.option('--issue', '-i')
+@ main.command()
+@ click.argument('id')
+@ click.option('--date', '-d')
+@ click.option('--description')
+@ click.option('--time', '-t')
+@ click.option('--issue', '-i')
 def edit(id, date, description, time, issue):
     try:
         args_dict = locals()
@@ -136,16 +150,17 @@ def edit(id, date, description, time, issue):
         print(e)
 
 
-@main.command()
-@click.option('--today', '-t', is_flag=True)
-@click.option('--month', '-m')
-@click.option('--remove', '-rm', is_flag=True)
-@click.pass_context
-def send(ctx, today, month, remove):
+@ main.command()
+@ click.option('--today', '-t', is_flag=True)
+@ click.option('--month', '-m')
+@ click.option('--day', '-d')
+@ click.option('--remove', '-rm', is_flag=True)
+@ click.pass_context
+def send(ctx, today, month, day, remove):
     """
     Send worklogs to tempo through REST requests.
     """
-    worklogs = ctx.invoke(ls, month=month, today=today, stdout=False)
+    worklogs = ctx.invoke(ls, month=month, day=day, today=today, stdout=False)
     config = get_config()
     for w in worklogs:
         if send_worklog(w, config['token'], config['account_id']) and remove:
